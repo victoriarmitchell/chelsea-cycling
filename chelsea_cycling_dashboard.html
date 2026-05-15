@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chelsea — Cycling Fitness Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151815;
+    --surface2: #1c1f1b;
+    --surface3: #232620;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0ec;
+    --text2: #9a9c94;
+    --text3: #5c5e58;
+    --green: #a8e063;
+    --green-dim: rgba(168,224,99,0.15);
+    --green-dark: #3d5c1a;
+    --amber: #e8c76a;
+    --amber-dim: rgba(232,199,106,0.12);
+    --red: #e8876a;
+    --red-dim: rgba(232,135,106,0.12);
+    --blue: #6ab0e8;
+    --blue-dim: rgba(106,176,232,0.12);
+    --purple: #b09ae8;
+    --purple-dim: rgba(176,154,232,0.12);
+    --accent: #a8e063;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── header ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 2.5rem 1.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header-left {}
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* ── layout ── */
+  .main { padding: 2rem 2.5rem; max-width: 1100px; }
+
+  /* ── metric cards ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+  }
+  .metric {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+    position: relative;
+  }
+  .metric-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.5rem;
+  }
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .metric-sub { font-size: 11px; color: var(--text3); }
+  .delta-pos { color: var(--green); font-size: 13px; font-weight: 500; margin-left: 6px; }
+  .delta-neg { color: var(--red); font-size: 13px; font-weight: 500; margin-left: 6px; }
+
+  /* ── tabs ── */
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+    flex-wrap: wrap;
+  }
+  .tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    color: var(--text3);
+    transition: all 0.15s;
+    border: none;
+    background: none;
+  }
+  .tab:hover { color: var(--text2); }
+  .tab.active {
+    background: var(--surface3);
+    color: var(--accent);
+    border: 1px solid var(--border2);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── section labels ── */
+  .sl {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 1.5rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .sl::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── compare grid ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .compare-card { background: var(--surface); padding: 1.25rem 1.5rem; }
+  .cc-head {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .pre-head { color: var(--purple); }
+  .plan-head { color: var(--green); }
+  .cc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+  }
+  .cc-row:last-child { border-bottom: none; }
+  .cc-key { color: var(--text3); flex-shrink: 0; }
+  .cc-val { color: var(--text); text-align: right; }
+
+  /* ── callout boxes ── */
+  .nb {
+    background: var(--blue-dim);
+    border: 1px solid rgba(106,176,232,0.2);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    color: var(--text2);
+    margin: 1rem 0;
+    line-height: 1.7;
+  }
+  .wb {
+    background: var(--amber-dim);
+    border: 1px solid rgba(232,199,106,0.2);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    color: var(--text2);
+    margin: 1rem 0;
+    line-height: 1.7;
+  }
+  .gb {
+    background: var(--green-dim);
+    border: 1px solid rgba(168,224,99,0.2);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    color: var(--text2);
+    margin: 1rem 0;
+    line-height: 1.7;
+  }
+
+  /* ── tables ── */
+  .zt { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .zt th {
+    text-align: left;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 6px 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .zt td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+  .zt tr:last-child td { border-bottom: none; }
+  .zt tr:hover td { background: var(--surface2); }
+
+  /* ── zone pills ── */
+  .zp {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+  .z1 { background: rgba(168,224,99,0.15); color: #a8e063; border: 1px solid rgba(168,224,99,0.25); }
+  .z2 { background: rgba(106,176,232,0.15); color: #6ab0e8; border: 1px solid rgba(106,176,232,0.25); }
+  .z3 { background: rgba(232,199,106,0.15); color: #e8c76a; border: 1px solid rgba(232,199,106,0.25); }
+  .z4 { background: rgba(232,135,106,0.15); color: #e8876a; border: 1px solid rgba(232,135,106,0.25); }
+  .z5 { background: rgba(232,106,106,0.15); color: #e87070; border: 1px solid rgba(232,106,106,0.25); }
+  .z6 { background: rgba(200,80,80,0.2); color: #e05555; border: 1px solid rgba(200,80,80,0.3); }
+  .z7 { background: rgba(170,50,50,0.25); color: #d03030; border: 1px solid rgba(170,50,50,0.35); }
+  .ztrack { background: rgba(168,224,99,0.12); color: #a8e063; border: 1px solid rgba(168,224,99,0.2); }
+  .zhigh { background: rgba(232,135,106,0.15); color: #e8876a; border: 1px solid rgba(232,135,106,0.25); }
+  .zmed { background: rgba(232,199,106,0.15); color: #e8c76a; border: 1px solid rgba(232,199,106,0.25); }
+
+  /* ── charts ── */
+  .chart-wrap { position: relative; width: 100%; margin: 0.75rem 0; }
+  .lg { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); }
+  .lg span { display: flex; align-items: center; gap: 6px; }
+  .ld { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* ── W/kg section ── */
+  .wkg-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 1.25rem; }
+  .wkg-input-row label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .wkg-input-row input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 6px 12px;
+    width: 100px;
+    outline: none;
+    transition: border 0.15s;
+  }
+  .wkg-input-row input:focus { border-color: var(--accent); }
+  #wkgDisplay { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+
+  .pr-wrap { margin: 0.5rem 0 1.25rem; }
+  .pr-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .pr-lbl { width: 130px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; flex-shrink: 0; }
+  .pr-track { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .pr-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+  .pr-val { width: 75px; text-align: right; color: var(--text2); font-family: 'DM Mono', monospace; font-size: 11px; }
+
+  /* ── divider ── */
+  .divider { height: 1px; background: var(--border); margin: 2rem 0; }
+
+  /* ── footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 1.25rem 2.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 640px) {
+    .header, .main { padding: 1.25rem; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: 1fr 1fr; }
+    .footer { padding: 1rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="eyebrow">Training analysis · 2026/2027 CX season</div>
+    <h1>Chelsea's <span>Cycling</span><br>Fitness Report</h1>
+  </div>
+  <div class="header-meta">
+    <div>Plan start — Apr 3, 2026</div>
+    <div>Report date — May 15, 2026</div>
+    <div>Goal — Cat 3 → Cat 1 CX</div>
+    <div>Region — Mid-Atlantic</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="metric-grid">
+    <div class="metric">
+      <div class="metric-label">FTP — pre-plan</div>
+      <div class="metric-value">163<span style="font-size:1rem;color:var(--text3)">W</span></div>
+      <div class="metric-sub">Best NP on 20-min hard effort (Mar 24)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">FTP — on plan</div>
+      <div class="metric-value">170<span style="font-size:1rem;color:var(--text3)">W</span> <span class="delta-pos">+7W</span></div>
+      <div class="metric-sub">NP on 60-min indoor effort (Apr 18)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">LTHR — pre-plan</div>
+      <div class="metric-value">161<span style="font-size:1rem;color:var(--text3)">bpm</span></div>
+      <div class="metric-sub">Avg HR at threshold effort (Mar 18/24)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">LTHR — on plan</div>
+      <div class="metric-value">152<span style="font-size:1rem;color:var(--text3)">bpm</span> <span class="delta-pos">−9</span></div>
+      <div class="metric-sub">Avg HR on 60-min sustained effort</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Max HR observed</div>
+      <div class="metric-value">200<span style="font-size:1rem;color:var(--text3)">bpm</span></div>
+      <div class="metric-sub">May 2 gravel ride</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Best 20-min power</div>
+      <div class="metric-value">188<span style="font-size:1rem;color:var(--text3)">W</span></div>
+      <div class="metric-sub">Apr 26 outdoor surge (not paced)</div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('compare')">Pre vs plan</button>
+    <button class="tab" onclick="showTab('load')">Weekly load</button>
+    <button class="tab" onclick="showTab('zones')">Zones</button>
+    <button class="tab" onclick="showTab('cx')">Cat 3 → Cat 1</button>
+  </div>
+
+  <!-- ── TAB: COMPARE ── -->
+  <div id="tab-compare" class="tab-panel active">
+
+    <div class="sl">Head-to-head</div>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <div class="cc-head pre-head">Pre-plan · Mar 12 – Apr 2</div>
+        <div class="cc-row"><span class="cc-key">Weeks of data</span><span class="cc-val">3 weeks</span></div>
+        <div class="cc-row"><span class="cc-key">Cycling activities</span><span class="cc-val">52</span></div>
+        <div class="cc-row"><span class="cc-key">Avg weekly TSS</span><span class="cc-val">~133</span></div>
+        <div class="cc-row"><span class="cc-key">Avg weekly volume</span><span class="cc-val">~5.4 hrs</span></div>
+        <div class="cc-row"><span class="cc-key">FTP estimate</span><span class="cc-val">~163W</span></div>
+        <div class="cc-row"><span class="cc-key">LTHR</span><span class="cc-val">~161 bpm</span></div>
+        <div class="cc-row"><span class="cc-key">Best NP (indoor)</span><span class="cc-val">171W (20 min)</span></div>
+        <div class="cc-row"><span class="cc-key">Best 20-min power</span><span class="cc-val">162W</span></div>
+        <div class="cc-row"><span class="cc-key">Avg bpm/W (indoor)</span><span class="cc-val">1.00 – 1.06</span></div>
+        <div class="cc-row"><span class="cc-key">Strength sessions</span><span class="cc-val">~1×/week</span></div>
+      </div>
+      <div class="compare-card">
+        <div class="cc-head plan-head">On plan · Apr 3 – May 14</div>
+        <div class="cc-row"><span class="cc-key">Weeks of data</span><span class="cc-val">6 weeks</span></div>
+        <div class="cc-row"><span class="cc-key">Cycling activities</span><span class="cc-val">113</span></div>
+        <div class="cc-row"><span class="cc-key">Avg weekly TSS</span><span class="cc-val">~163 <span class="delta-pos">↑23%</span></span></div>
+        <div class="cc-row"><span class="cc-key">Avg weekly volume</span><span class="cc-val">~6.4 hrs <span class="delta-pos">↑19%</span></span></div>
+        <div class="cc-row"><span class="cc-key">FTP estimate</span><span class="cc-val">~170W <span class="delta-pos">+7W</span></span></div>
+        <div class="cc-row"><span class="cc-key">LTHR</span><span class="cc-val">~152 bpm <span class="delta-pos">−9</span></span></div>
+        <div class="cc-row"><span class="cc-key">Best NP (indoor)</span><span class="cc-val">174W (23 min) <span class="delta-pos">+3W</span></span></div>
+        <div class="cc-row"><span class="cc-key">Best 20-min power</span><span class="cc-val">188W outdoor surge</span></div>
+        <div class="cc-row"><span class="cc-key">Avg bpm/W (indoor)</span><span class="cc-val">1.01 – 1.03 <span class="delta-pos">↑improved</span></span></div>
+        <div class="cc-row"><span class="cc-key">Strength sessions</span><span class="cc-val">~2×/week <span class="delta-pos">↑</span></span></div>
+      </div>
+    </div>
+
+    <div class="sl">Aerobic efficiency — indoor rides (bpm per watt, lower = better)</div>
+    <div class="lg">
+      <span><span class="ld" style="background:#b09ae8"></span>Pre-plan</span>
+      <span><span class="ld" style="background:#a8e063"></span>On-plan</span>
+    </div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="effChart" role="img" aria-label="Aerobic efficiency showing bpm per watt on indoor rides, pre-plan vs on-plan."></canvas>
+    </div>
+
+    <div class="sl">Indoor NP progression</div>
+    <div class="lg">
+      <span><span class="ld" style="background:#b09ae8"></span>NP (W) — pre-plan</span>
+      <span><span class="ld" style="background:#a8e063"></span>NP (W) — on-plan</span>
+      <span><span class="ld" style="background:rgba(232,199,106,0.6)"></span>Avg HR</span>
+    </div>
+    <div class="chart-wrap" style="height:210px">
+      <canvas id="npChart" role="img" aria-label="Indoor normalized power and avg HR across all trainer rides."></canvas>
+    </div>
+
+    <div class="nb">
+      The LTHR drop from ~161 to ~152 bpm at similar power is the strongest adaptation signal. Chelsea is producing the same watts with meaningfully less cardiovascular stress — a clear marker of aerobic base development. The two indoor rides on Apr 18 (60 min, NP 164W) and Apr 11 (23 min, NP 174W) bracket a probable working FTP of 170–177W.
+    </div>
+  </div>
+
+  <!-- ── TAB: LOAD ── -->
+  <div id="tab-load" class="tab-panel">
+    <div class="sl">Weekly TSS + volume — all cycling</div>
+    <div class="wb">TSS is only recorded for rides where Garmin computed it from a power meter. Plan W1 and partial weeks show lower TSS because most short commute rides lack power data. Duration and distance are the more reliable load proxies for those weeks.</div>
+    <div class="lg">
+      <span><span class="ld" style="background:#6ab0e8"></span>TSS</span>
+      <span><span class="ld" style="background:#e8876a"></span>Distance (km)</span>
+      <span><span class="ld" style="background:rgba(168,224,99,0.6)"></span>Duration (hrs)</span>
+    </div>
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="weeklyChart" role="img" aria-label="Weekly training load by plan week."></canvas>
+    </div>
+
+    <div class="sl">Key load notes</div>
+    <table class="zt">
+      <thead><tr><th>Week</th><th>Dates</th><th>TSS</th><th>Distance</th><th>Hours</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Pre W-3</td><td>Mar 13–19</td><td>134</td><td>86 km</td><td>5.9h</td><td style="color:var(--text3)">Mar 18 hard indoor (NP 166W, HR 163)</td></tr>
+        <tr><td>Pre W-2</td><td>Mar 20–26</td><td>148</td><td>63 km</td><td>4.4h</td><td style="color:var(--text3)">Best pre-plan FTP signal (Mar 24, NP 171W)</td></tr>
+        <tr><td>Pre W-1</td><td>Mar 27–Apr 2</td><td>112</td><td>60 km</td><td>3.9h</td><td style="color:var(--text3)">Consistent baseline</td></tr>
+        <tr><td>Plan W4</td><td>Apr 24–30</td><td>274</td><td>90 km</td><td>7.8h</td><td style="color:var(--text3)">274 TSS in single 4-hr outdoor ride</td></tr>
+        <tr><td>Plan W5</td><td>May 2–7</td><td>337</td><td>76 km</td><td>6.2h</td><td style="color:var(--accent)">Peak TSS week — gravel + outdoor efforts</td></tr>
+        <tr><td>Plan W6</td><td>May 8–14</td><td>222+</td><td>119 km</td><td>8.7h</td><td style="color:var(--text3)">TSS partial — Garmin pending on recent rides</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── TAB: ZONES ── -->
+  <div id="tab-zones" class="tab-panel">
+    <div class="sl">Heart rate zones — Coggan LTHR model (on-plan LTHR = 152 bpm, MHR = 200 bpm)</div>
+    <table class="zt">
+      <thead><tr><th>Zone</th><th>Name</th><th>On-plan BPM</th><th>Pre-plan BPM</th><th>% LTHR</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><span class="zp z1">Z1</span></td><td>Active recovery</td><td>&lt; 103</td><td>&lt; 109</td><td>&lt; 68%</td><td style="color:var(--text3)">Easy spin, recovery rides</td></tr>
+        <tr><td><span class="zp z2">Z2</span></td><td>Endurance</td><td>103–126</td><td>109–133</td><td>68–83%</td><td style="color:var(--text3)">Aerobic base building, fat oxidation</td></tr>
+        <tr><td><span class="zp z3">Z3</span></td><td>Tempo</td><td>127–142</td><td>135–151</td><td>84–94%</td><td style="color:var(--text3)">Sweetspot, CX race base</td></tr>
+        <tr><td><span class="zp z4">Z4</span></td><td>Threshold</td><td>144–159</td><td>153–169</td><td>95–105%</td><td style="color:var(--text3)">FTP intervals, ~40-min race pace</td></tr>
+        <tr><td><span class="zp z5">Z5a</span></td><td>VO2max</td><td>161–168</td><td>171–179</td><td>106–111%</td><td style="color:var(--text3)">3–8 min hard efforts</td></tr>
+        <tr><td><span class="zp z6">Z5b</span></td><td>Anaerobic</td><td>170–176</td><td>180–185</td><td>112–116%</td><td style="color:var(--text3)">CX surges, short accelerations</td></tr>
+        <tr><td><span class="zp z7">Z5c</span></td><td>Neuromuscular</td><td>177–200</td><td>186–200</td><td>&gt; 116%</td><td style="color:var(--text3)">Max sprints, barriers, remounts</td></tr>
+      </tbody>
+    </table>
+    <div class="nb">Update Chelsea's LTHR to 152 bpm in Garmin / TrainingPeaks. Her old zones were ~9 bpm too high, meaning she was training harder than intended pre-plan.</div>
+
+    <div class="sl">Power zones — Coggan 7-zone (FTP = 170W)</div>
+    <table class="zt">
+      <thead><tr><th>Zone</th><th>Name</th><th>Watts</th><th>% FTP</th><th>CX relevance</th></tr></thead>
+      <tbody>
+        <tr><td><span class="zp z1">Z1</span></td><td>Active recovery</td><td>&lt; 94W</td><td>&lt; 55%</td><td style="color:var(--text3)">Warm-up, cool-down</td></tr>
+        <tr><td><span class="zp z2">Z2</span></td><td>Endurance</td><td>94–127W</td><td>56–75%</td><td style="color:var(--text3)">Long base rides</td></tr>
+        <tr><td><span class="zp z3">Z3</span></td><td>Tempo</td><td>128–153W</td><td>76–90%</td><td style="color:var(--text3)">Sweetspot intervals</td></tr>
+        <tr><td><span class="zp z4">Z4</span></td><td>Threshold</td><td>153–178W</td><td>91–105%</td><td style="color:var(--text3)">CX race pace, 40-min efforts</td></tr>
+        <tr><td><span class="zp z5">Z5</span></td><td>VO2max</td><td>178–204W</td><td>106–120%</td><td style="color:var(--text3)">Course surges, punchy climbs</td></tr>
+        <tr><td><span class="zp z6">Z6</span></td><td>Anaerobic</td><td>204–255W</td><td>121–150%</td><td style="color:var(--text3)">Barriers, remounts, accelerations</td></tr>
+        <tr><td><span class="zp z7">Z7</span></td><td>Neuromuscular</td><td>&gt; 255W</td><td>&gt; 150%</td><td style="color:var(--text3)">Max sprint, steep punchy rises</td></tr>
+      </tbody>
+    </table>
+
+    <div class="sl">RPE zones — Borg CR10</div>
+    <table class="zt">
+      <thead><tr><th>Zone</th><th>RPE (0–10)</th><th>Talk test</th><th>HR (on-plan)</th></tr></thead>
+      <tbody>
+        <tr><td><span class="zp z1">Z1</span></td><td>1–2</td><td>Could sing</td><td>&lt; 103 bpm</td></tr>
+        <tr><td><span class="zp z2">Z2</span></td><td>3–4</td><td>Full sentences, comfortable</td><td>103–126 bpm</td></tr>
+        <tr><td><span class="zp z3">Z3</span></td><td>5–6</td><td>Short sentences, slightly breathless</td><td>127–142 bpm</td></tr>
+        <tr><td><span class="zp z4">Z4</span></td><td>7</td><td>1–2 words, deliberate breathing</td><td>144–159 bpm</td></tr>
+        <tr><td><span class="zp z5">Z5a</span></td><td>8–9</td><td>Cannot speak</td><td>161–168 bpm</td></tr>
+        <tr><td><span class="zp z6">Z5b</span></td><td>9–10</td><td>All-out, unsustainable</td><td>170–176 bpm</td></tr>
+        <tr><td><span class="zp z7">Z5c</span></td><td>10</td><td>Max explosive effort</td><td>177–200 bpm</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── TAB: CX GAP ── -->
+  <div id="tab-cx" class="tab-panel">
+    <div class="sl">W/kg calculator</div>
+    <div class="wkg-input-row">
+      <label>Chelsea's weight (kg)</label>
+      <input type="number" id="weightInput" min="40" max="100" step="0.5" placeholder="e.g. 62" oninput="updateWkg()">
+      <span id="wkgDisplay"></span>
+    </div>
+
+    <div class="pr-wrap">
+      <div class="pr-row"><div class="pr-lbl">Cat 4/5 entry</div><div class="pr-track"><div class="pr-fill" style="background:#1D9E75;width:33%"></div></div><div class="pr-val">~2.0 W/kg</div></div>
+      <div class="pr-row"><div class="pr-lbl">Cat 3 mid</div><div class="pr-track"><div class="pr-fill" style="background:#378ADD;width:50%"></div></div><div class="pr-val">~2.8 W/kg</div></div>
+      <div class="pr-row"><div class="pr-lbl">Chelsea pre-plan</div><div class="pr-track" id="preBar"><div class="pr-fill" style="background:#b09ae8;width:0%"></div></div><div class="pr-val" id="preVal" style="color:var(--purple)">enter weight</div></div>
+      <div class="pr-row"><div class="pr-lbl">Chelsea on-plan</div><div class="pr-track" id="planBar"><div class="pr-fill" style="background:#a8e063;width:0%"></div></div><div class="pr-val" id="planVal" style="color:var(--green)">enter weight</div></div>
+      <div class="pr-row"><div class="pr-lbl">Cat 2 target</div><div class="pr-track"><div class="pr-fill" style="background:#e8c76a;width:72%"></div></div><div class="pr-val">~3.5 W/kg</div></div>
+      <div class="pr-row"><div class="pr-lbl">Cat 1 target</div><div class="pr-track"><div class="pr-fill" style="background:#e8876a;width:90%"></div></div><div class="pr-val">~4.0+ W/kg</div></div>
+    </div>
+
+    <div class="sl">Gap analysis</div>
+    <table class="zt">
+      <thead><tr><th>Attribute</th><th>Pre-plan</th><th>On-plan</th><th>Cat 1 target</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr><td>FTP (absolute)</td><td style="color:var(--text3)">~163W</td><td>~170W <span class="delta-pos">+7W</span></td><td style="color:var(--text3)">190–220W+</td><td><span class="zp zhigh">High</span></td></tr>
+        <tr><td>FTP/kg (relative)</td><td style="color:var(--text3)">enter weight</td><td>enter weight</td><td style="color:var(--text3)">3.8–4.2 W/kg</td><td><span class="zp zhigh">High</span></td></tr>
+        <tr><td>LTHR</td><td style="color:var(--text3)">~161 bpm</td><td>~152 bpm <span class="delta-pos">−9</span></td><td style="color:var(--text3)">Lower is better</td><td><span class="zp ztrack">Tracking well</span></td></tr>
+        <tr><td>Aerobic efficiency</td><td style="color:var(--text3)">1.00–1.06 bpm/W</td><td>1.01–1.03 bpm/W <span class="delta-pos">↑</span></td><td style="color:var(--text3)">Continue improving</td><td><span class="zp ztrack">Tracking well</span></td></tr>
+        <tr><td>Avg weekly TSS</td><td style="color:var(--text3)">~133</td><td>~163 <span class="delta-pos">+23%</span></td><td style="color:var(--text3)">400–600 in build</td><td><span class="zp zhigh">High</span></td></tr>
+        <tr><td>Peak week TSS</td><td style="color:var(--text3)">148</td><td>337 <span class="delta-pos">+128%</span></td><td style="color:var(--text3)">500–700 peaks</td><td><span class="zp zmed">Medium</span></td></tr>
+        <tr><td>Anaerobic repeatability</td><td style="color:var(--text3)">Hard indoor surges</td><td>Not yet structured</td><td style="color:var(--text3)">Repeated 5–8s at 300%+ FTP</td><td><span class="zp zhigh">High</span></td></tr>
+        <tr><td>CX skills</td><td style="color:var(--text3)">Not in data</td><td>Not in data</td><td style="color:var(--text3)">Barriers, remounts, sand</td><td><span class="zp zhigh">High</span></td></tr>
+        <tr><td>Strength training</td><td style="color:var(--text3)">~1×/week</td><td>~2×/week <span class="delta-pos">↑</span></td><td style="color:var(--text3)">Maintain 2×/week</td><td><span class="zp ztrack">On track</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="gb">
+      At the current FTP trajectory (~7W per 6-week block), Chelsea reaches ~190W by the October CX season start — the low end of Cat 1 competitive range. The bigger lever between now and October is structured anaerobic work: CX races are won by repeated accelerations above FTP, not sustained power. Adding 2–3 weekly sessions of short Z5/Z6 intervals (30/30s, over-unders, hill reps) in the next block will close the Cat 2 gap faster than continued endurance volume alone.
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="footer">
+  <span>Data source — Garmin Connect export · Mar 12 – May 14 2026</span>
+  <span>FTP method — Coggan NP / 95% 20-min test · LTHR method — avg HR on best sustained indoor effort</span>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function updateWkg() {
+  const w = parseFloat(document.getElementById('weightInput').value);
+  if (!w || w < 30) {
+    document.getElementById('wkgDisplay').textContent = '';
+    document.getElementById('preVal').textContent = 'enter weight';
+    document.getElementById('planVal').textContent = 'enter weight';
+    document.getElementById('preBar').innerHTML = '<div class="pr-fill" style="background:#b09ae8;width:0%"></div>';
+    document.getElementById('planBar').innerHTML = '<div class="pr-fill" style="background:#a8e063;width:0%"></div>';
+    return;
+  }
+  const pre = (163 / w).toFixed(2), plan = (170 / w).toFixed(2);
+  document.getElementById('wkgDisplay').textContent = plan + ' W/kg (on-plan)';
+  const maxRef = 4.5;
+  document.getElementById('preBar').innerHTML = `<div class="pr-fill" style="background:#b09ae8;width:${Math.round((pre/maxRef)*100)}%"></div>`;
+  document.getElementById('planBar').innerHTML = `<div class="pr-fill" style="background:#a8e063;width:${Math.round((plan/maxRef)*100)}%"></div>`;
+  document.getElementById('preVal').textContent = pre + ' W/kg';
+  document.getElementById('planVal').textContent = plan + ' W/kg';
+}
+
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } }
+};
+
+// Aerobic efficiency
+new Chart(document.getElementById('effChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Mar 12\n19m','Mar 14\n42m','Mar 18\n26m','Mar 24a\n39m','Mar 24b\n20m','Mar 27\n33m','Mar 28\n43m','Apr 11\n23m','Apr 18\n60m','Apr 22\n37m'],
+    datasets: [{
+      data: [1.039,1.058,1.038,1.165,0.994,0.880,1.028,0.994,1.034,1.013],
+      backgroundColor: ['#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#a8e063','#a8e063','#a8e063'],
+      borderRadius: 4,
+      barPercentage: 0.65
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(3) + ' bpm/W' } }
+    },
+    scales: {
+      x: { ticks: { color: '#5c5e58', font: { size: 10 } }, grid: { display: false } },
+      y: { min: 0.8, max: 1.25, ticks: { color: '#5c5e58', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'bpm / watt', color: '#5c5e58', font: { size: 11 } } }
+    }
+  }
+});
+
+// Indoor NP chart
+new Chart(document.getElementById('npChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Mar 12','Mar 14','Mar 18','Mar 24a','Mar 24b','Mar 25','Mar 27','Mar 28','Apr 11','Apr 18','Apr 22'],
+    datasets: [
+      {
+        label: 'NP (W)',
+        data: [142,141,166,154,171,159,152,158,174,164,163],
+        backgroundColor: ['#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#b09ae8','#a8e063','#a8e063','#a8e063'],
+        borderRadius: 4,
+        barPercentage: 0.65,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Avg HR',
+        data: [133,145,163,134,160,150,132,145,155,152,151],
+        backgroundColor: 'rgba(232,199,106,0.35)',
+        borderRadius: 4,
+        barPercentage: 0.65,
+        yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      x: { ticks: { color: '#5c5e58', font: { size: 11 }, maxRotation: 45 }, grid: { display: false } },
+      y: { min: 120, ticks: { color: '#5c5e58', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'NP (W)', color: '#5c5e58', font: { size: 11 } } },
+      y2: { position: 'right', min: 110, max: 175, ticks: { color: '#5c5e58', font: { size: 11 } }, grid: { display: false }, title: { display: true, text: 'Avg HR', color: '#5c5e58', font: { size: 11 } } }
+    }
+  }
+});
+
+// Weekly load
+new Chart(document.getElementById('weeklyChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Pre W-3','Pre W-2','Pre W-1','Plan W1','Plan W2','Plan W3','Plan W4','Plan W5','Plan W6'],
+    datasets: [
+      { label: 'TSS', data: [134,148,112,0,31,114,274,337,222], backgroundColor: '#6ab0e8', borderRadius: 4, barPercentage: 0.65, yAxisID: 'y' },
+      { label: 'Distance (km)', data: [86,63,60,43,91,57,90,76,119], backgroundColor: '#e8876a', borderRadius: 4, barPercentage: 0.65, yAxisID: 'y' },
+      { label: 'Duration (hrs)', data: [5.9,4.4,3.9,3.2,6.6,3.8,7.8,6.2,8.7], backgroundColor: 'rgba(168,224,99,0.55)', borderRadius: 4, barPercentage: 0.65, yAxisID: 'y2' }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      x: { ticks: { color: '#5c5e58', font: { size: 11 }, autoSkip: false, maxRotation: 30 }, grid: { display: false } },
+      y: { ticks: { color: '#5c5e58', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'TSS / km', color: '#5c5e58', font: { size: 11 } } },
+      y2: { position: 'right', ticks: { color: '#5c5e58', font: { size: 11 } }, grid: { display: false }, title: { display: true, text: 'Hours', color: '#5c5e58', font: { size: 11 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
